@@ -1,0 +1,22 @@
+{
+	"name": "dtext",
+	"description": "Tool for text internationalization inspired from GNU gettext.",
+	"homepage": "http://github.com/NCrashed/dtext",
+	"copyright": "Copyright © 2013, Gushcha Anton",
+	"authors": [
+		"NCrashed - Gushcha Anton"
+	],
+    "license": "Boost Software License - Version 1.0",
+	"dependencies": {
+        "sdlang-d": ">=0.8.4"
+	},
+    "targetType": "library",
+    
+    "buildTypes": {
+        "unittest": {
+            "targetType": "executable",
+            "targetName": "tests",
+            "dflags": ["-unittest", "-debug"]
+        }
+    }
+}
