@@ -8,15 +8,24 @@
 	],
     "license": "Boost Software License - Version 1.0",
 	"dependencies": {
-        "sdlang-d": ">=0.8.4"
 	},
-    "targetType": "library",
     
-    "buildTypes": {
-        "unittest": {
+
+    "configurations": [
+        {
+            "name": "library",
+            "targetType": "library"
+        },
+        {
+            "name": "tests",
             "targetType": "executable",
-            "targetName": "tests",
-            "dflags": ["-unittest", "-debug"]
+            "buildTypes": {
+                "unittest": {
+                    "targetType": "executable",
+                    "targetName": "tests",
+                    "dflags": ["-unittest", "-debug"]
+                }
+            },
         }
-    }
+    ]
 }

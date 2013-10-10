@@ -24,40 +24,244 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 */
-// Written in D programming language
+// Written in D programing language
+/**
+*   Module provides functions to handle localization. Translated string
+*   is searched in special files with .lang extention by exact matching
+*   with original string.
+*
+*   Lang files are loaded in memory at program start up from current 
+*   directory. Additional localizations can be loaded with $(B loadLocaleFile) 
+*   function.
+*
+*   Example:
+*   --------
+*    import std.stdio, std.opt;
+*
+*    void main(string[] args) 
+*    {
+*        string locale;
+*        getopt(args,
+*            "l|lang", &locale);
+*
+*        defaultLocale = locale;
+*
+*        writeln(dtext("Hello, world!"));
+*    }
+*   --------
+*
+*   If text for translation cannot be found in specified locale name, the text will
+*   be saved and written down to a special fuzzy texts file at program shutdown. That
+*   should help to add new localization fast and without program recompilation.
+*
+*   TODO:
+*   <ul>
+*   <li>Load localization files on demand;</li>
+*   <li>Add ability to unload unused locales.</li>
+*   </ul>
+*/
 module dtext;
+
+/**
+*   Special locale that doesn't have own locale file. System won't
+*   create additional information (fuzzy file or locale map).
+*/
+enum BASE_LOCALE = "en_US";
+
+/**
+*   File extention which will be searched in current directory to load locale information.
+*/
+enum LOCALE_EXTENTION = ".lang";
+
+/**
+*   Returns translated string $(B s) for specified $(B locale). If locale is empty default
+*   locale will be taken. If locale name is equal to base locale $(B s) string is returned 
+*   without modification.
+*
+*   Localization strings are taken from special files previosly loaded into memory.
+*
+*   If string $(B s) isn't persists in locale strings it will be put into fuzzy text map.
+*   Fuzzy strings is saved in separate file for each locale to be translated later.
+*
+*   See_Also: BASE_LOCALE, defaultLocale properties.
+*
+*   Example:
+*   --------
+*   assert(dtext("Hello, world!", "ru_RU") == "Привет, мир!");
+*   assert(dtext("Hello, world!", "es_ES") == "Hola, mundo!");
+*   assert(dtext("") == "");
+*   --------
+*/
+string dtext(string s, string locale = "")
+{
+    if(locale == "") locale = defaultLocale;
+    if(locale == BASE_LOCALE) return s;
+
+    if(locale in localeMap)
+    {
+        auto map = localeMap[locale];
+        if(s in map)
+        {
+            return map[s];
+        }
+    } 
+
+    if(locale !in fuzzyText) fuzzyText[locale] = [];
+    if(fuzzyText[locale].find(s) == [])
+        fuzzyText[locale] ~= s;
+    return s;
+}
+
+/**
+*   Setups current locale name. If empty string is passed to
+*   $(B dtext) then default locale will be taken.
+*
+*   Example:
+*   --------
+*   defaultLocale = "ru_RU";
+*   defaultLocale = BASE_LOCALE;
+*   --------
+*/
+void defaultLocale(string locale) @property
+{
+    _defaultLocale = locale;
+}
+
+/**
+*   Returns current locale name. If empty string is passed to
+*   $(B dtext) then default locale will be taken.
+*/
+string defaultLocale() @property
+{
+    return _defaultLocale;
+}
+
+/**
+*   Manuall loads localization file with $(B name). May be usefull to
+*   load localization during program execution. 
+*
+*   Example:
+*   --------
+*   loadLocaleFile("ru_RU");
+*   loadLocaleFile("es_ES");
+*   --------
+*/
+void loadLocaleFile(string name)
+{
+    if(!name.endsWith(LOCALE_EXTENTION)) name ~= LOCALE_EXTENTION;
+
+    auto data = slurp!(string, string)(name, `"%s" = "%s"`);
+    auto localeName = baseName(name, LOCALE_EXTENTION);
+    if(localeName !in localeMap) localeMap[localeName] = ["":""];
+    auto map = localeMap[localeName];
+    foreach(pair; data)
+    {
+        map[pair[0]] = pair[1];
+    }
+}
 
 private
 {
     import std.file;
+    import std.algorithm;
+    import std.path;
+    import std.stdio;
+    
+    string _defaultLocale = BASE_LOCALE;
+
+    string[string][string] localeMap;
+    string[][string] fuzzyText;
 }
 
-string dtext(string s, string lang = "")()
+private string getFuzzyLocaleFileName(string locale)
 {
-    static if(s == "") return "";
-    else
+    return locale~".fuzzy";
+}
+
+private void saveFuzzyText()
+{
+    foreach(locale, strs; fuzzyText)
     {
-        static if(lang != "")
+        try
         {
-            static if(lang.exists)
-            {
+            auto file = new File(getFuzzyLocaleFileName(locale), "wr");
+            scope(exit) file.close;
 
-            }
+            foreach(i,s; strs)
+                if(i++ == strs.length-1)
+                    file.write('"'~s~`" = "`~s~`"`);
+                else
+                    file.writeln('"'~s~`" = "`~s~`"`);
         }
-        else // needed extract language
+        catch(Exception e)
         {
-
+            writeln("Failed to save fuzzy text for locale ", locale);
         }
     }
 }
 
+private void loadAllLocales()
+{
+    auto locFiles = filter!`endsWith(a.name,".lang")`(dirEntries(".",SpanMode.breadth));
+    foreach(entry; locFiles)
+    {
+        try
+        {
+            loadLocaleFile(entry.name);
+        } 
+        catch(Exception e)
+        {
+            writeln("Failed to load localization file ", entry.name, ". Reason: ", e.msg);
+        }
+    }
+}
+
+shared static this() 
+{
+    version(unittest) {}
+    else
+        loadAllLocales();
+}
+
+shared static ~this()
+{
+    version(unittest) {}
+    else
+        saveFuzzyText();
+
+}
+
 version(unittest)
 {
-    void main() {}
+    import std.getopt;
+    import std.typecons;
+    import std.file;
+
+    void main(string[] args) 
+    {
+        string locale;
+        getopt(args,
+            "l|lang", &locale);
+
+        defaultLocale = locale;
+    }
 }
 
 unittest
 {
-    static assert(dtext!("Hello, world!", "ru_RU") == "Привет, мир!");
-    static assert(dtext!("") == "");
+    loadLocaleFile("ru_RU");
+    loadLocaleFile("es_ES");
+
+    assert(dtext("Hello, world!", "ru_RU") == "Привет, мир!");
+    assert(dtext("Hello, world!", "es_ES") == "Hola, mundo!");
+    assert(dtext("") == "");
+
+    // test fuzzy
+    assert(dtext("Hello, world!", "unknown_UNKNOWN") == "Hello, world!");
+    saveFuzzyText();
+
+    auto data = slurp!(string, string)(getFuzzyLocaleFileName("unknown_UNKNOWN"), `"%s" = "%s"`);
+    assert(data == [Tuple!(string, string)("Hello, world!", "Hello, world!")]);
+
+    remove(getFuzzyLocaleFileName("unknown_UNKNOWN"));
 }
