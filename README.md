@@ -3,7 +3,7 @@ is searched in special files with .lang extention by exact matching
 with original string.
 
 Lang files are loaded in memory at program start up from current 
-directory. Additional localizations can be loaded with $(B loadLocaleFile) 
+directory. Additional localizations can be loaded with **loadLocaleFile** 
 function.
 
 Example:
