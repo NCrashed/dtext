@@ -36,7 +36,7 @@ DEALINGS IN THE SOFTWARE.
 *
 *   Example:
 *   --------
-*    import std.stdio, std.opt;
+*    import std.stdio, std.opt, dtext;
 *
 *    void main(string[] args) 
 *    {
@@ -46,7 +46,7 @@ DEALINGS IN THE SOFTWARE.
 *
 *        defaultLocale = locale;
 *
-*        writeln(_("Hello, world!"));
+*        writeln(_("Hello, world!")); \\ or use getdtext instead _
 *    }
 *   --------
 *

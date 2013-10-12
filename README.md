@@ -8,7 +8,7 @@ function.
 
 Example:
 ```
-import std.stdio, std.opt;
+import std.stdio, std.opt, dtext;
 
 void main(string[] args) 
 {
@@ -17,7 +17,7 @@ void main(string[] args)
     "l|lang", &locale);
 
   defaultLocale = locale;
-  writeln(dtext("Hello, world!"));
+  writeln(_("Hello, world!")); \\ or use getdtext
 }
 ```
 
