@@ -46,7 +46,7 @@ DEALINGS IN THE SOFTWARE.
 *
 *        defaultLocale = locale;
 *
-*        writeln(dtext("Hello, world!"));
+*        writeln(_("Hello, world!"));
 *    }
 *   --------
 *
@@ -87,12 +87,12 @@ enum LOCALE_EXTENTION = ".lang";
 *
 *   Example:
 *   --------
-*   assert(dtext("Hello, world!", "ru_RU") == "Привет, мир!");
-*   assert(dtext("Hello, world!", "es_ES") == "Hola, mundo!");
-*   assert(dtext("") == "");
+*   assert(getdtext("Hello, world!", "ru_RU") == "Привет, мир!");
+*   assert(getdtext("Hello, world!", "es_ES") == "Hola, mundo!");
+*   assert(getdtext("") == "");
 *   --------
 */
-string dtext(string s, string locale = "")
+string getdtext(string s, string locale = "")
 {
     if(locale == "") locale = defaultLocale;
     if(locale == BASE_LOCALE) return s;
@@ -112,9 +112,12 @@ string dtext(string s, string locale = "")
     return s;
 }
 
+/// Short name for getdtext
+alias getdtext _;
+
 /**
 *   Setups current locale name. If empty string is passed to
-*   $(B dtext) then default locale will be taken.
+*   $(B getdtext) then default locale will be taken.
 *
 *   Example:
 *   --------
@@ -129,7 +132,7 @@ void defaultLocale(string locale) @property
 
 /**
 *   Returns current locale name. If empty string is passed to
-*   $(B dtext) then default locale will be taken.
+*   $(B getdtext) then default locale will be taken.
 */
 string defaultLocale() @property
 {
@@ -252,12 +255,12 @@ unittest
     loadLocaleFile("ru_RU");
     loadLocaleFile("es_ES");
 
-    assert(dtext("Hello, world!", "ru_RU") == "Привет, мир!");
-    assert(dtext("Hello, world!", "es_ES") == "Hola, mundo!");
-    assert(dtext("") == "");
+    assert(getdtext("Hello, world!", "ru_RU") == "Привет, мир!");
+    assert(getdtext("Hello, world!", "es_ES") == "Hola, mundo!");
+    assert(getdtext("") == "");
 
     // test fuzzy
-    assert(dtext("Hello, world!", "unknown_UNKNOWN") == "Hello, world!");
+    assert(getdtext("Hello, world!", "unknown_UNKNOWN") == "Hello, world!");
     saveFuzzyText();
 
     auto data = slurp!(string, string)(getFuzzyLocaleFileName("unknown_UNKNOWN"), `"%s" = "%s"`);
